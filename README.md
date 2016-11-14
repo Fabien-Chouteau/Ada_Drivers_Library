@@ -1,3 +1,5 @@
+[![Build status](https://travis-ci.org/Fabien-Chouteau/Ada_Drivers_Library.svg?branch=master)](https://travis-ci.org/Fabien-Chouteau/Ada_Drivers_Library)
+
 # Warning!
 
 This repository uses git submodule, please clone with the --recursive option:
