@@ -8,7 +8,7 @@ os:
 before_script:
   - wget http://mirrors.cdn.adacore.com/art/5739cefdc7a447658e0b016b -O /tmp/gnat-gpl-2016-x86_64-linux-bin.tar.gz
   - tar -xf /tmp/gnat-gpl-2016-x86_64-linux-bin.tar.gz
-  - export PATH=$PATH:$PWD/gnat-gpl-2016-arm-x86_64-linux-bin/bin/
+  - export PATH=$PATH:$PWD/gnat-gpl-2016-x86_64-linux-bin/bin/
 
 script:
   - $PWD/gnat-gpl-2016-x86_64-linux-bin/bin/gprbuild --version
