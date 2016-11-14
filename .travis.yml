@@ -1,4 +1,6 @@
-language: c
+language: python
+python:
+  - "2.7"
 
 os:
   - linux
@@ -9,5 +11,5 @@ before_script:
   - export PATH=$PATH:$PWD/gnat-gpl-2016-arm-x86_64-linux-bin/bin/
 
 script:
-  - $PWD/gnat-gpl-2016-arm-x86_64-linux-bin/bin/gprbuild --version
-  - $PWD/testsuite/run.py
+  - $PWD/gnat-gpl-2016-x86_64-linux-bin/bin/gprbuild --version
+  - python $PWD/testsuite/run.py
