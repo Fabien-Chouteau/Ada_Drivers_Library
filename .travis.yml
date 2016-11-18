@@ -2,6 +2,11 @@ language: python
 python:
   - "2.7"
 
+env:
+  global:
+    - TOOLS_DIR=$HOME/build_tools
+    - GNAT_TAR_PATH=$TOOLS_DIR/build_tools/gnat-gpl-2016-x86_64-linux-bin.tar.gz
+
 os:
   - linux
 
@@ -12,10 +17,10 @@ cache:
 install:
   - ls $HOME
   - ls $HOME/build_tools
-  - test -d $HOME/build_tools ||( mkdir $HOME/build_tools && wget http://mirrors.cdn.adacore.com/art/5739cefdc7a447658e0b016b -O $HOME/build_tools/gnat-gpl-2016-x86_64-linux-bin.tar.gz)
+  - test -f  $GNAT_TAR_PATH ||( mkdir $TOOLS_DIR && wget http://mirrors.cdn.adacore.com/art/5739cefdc7a447658e0b016b -O $GNAT_TAR_PATH)
   - ls $HOME
   - ls $HOME/build_tools
-  - tar -xf $HOME/build_tools/gnat-gpl-2016-x86_64-linux-bin.tar.gz
+  - tar -xf GNAT_TAR_PATH
   - export PATH=$PATH:$PWD/gnat-gpl-2016-x86_64-linux-bin/bin/
 
 script:
