@@ -15,10 +15,8 @@ cache:
   - $HOME/build_tools
 
 install:
-  - ls $HOME
   - ls $HOME/build_tools
   - test -f  $GNAT_TAR_PATH ||( mkdir -p $TOOLS_DIR && wget http://mirrors.cdn.adacore.com/art/5739cefdc7a447658e0b016b -O $GNAT_TAR_PATH)
-  - ls $HOME
   - ls $HOME/build_tools
   - tar -xf $GNAT_TAR_PATH
   - export PATH=$PATH:$PWD/gnat-gpl-2016-x86_64-linux-bin/bin/
