@@ -30,7 +30,9 @@
 ------------------------------------------------------------------------------
 
 --  This program demonstrates reading the internal temperature sensor value
---  from an ADC unit, using polling.
+--  from an ADC unit, using polling. This temperature can be used to calibrate
+--  the ADC results because those results vary with the internal device
+--  temperature. Note that this is not an external (ambient air) reading.
 
 --  Note that you will likely need to reset the board manually after loading.
 
@@ -81,13 +83,13 @@ procedure Demo_ADC_Temperature_Polling is
    Successful : Boolean;
    Timed_Out  : exception;
 
-   procedure Print (X, Y : Natural; Value : Word; Suffix : String := "");
+   procedure Print (X, Y : Natural; Value : UInt32; Suffix : String := "");
 
    -----------
    -- Print --
    -----------
 
-   procedure Print (X, Y : Natural; Value : Word; Suffix : String := "") is
+   procedure Print (X, Y : Natural; Value : UInt32; Suffix : String := "") is
       Value_Image : constant String := Value'Img;
    begin
       LCD_Std_Out.Put (X, Y, Value_Image (2 .. Value_Image'Last) & Suffix & "   ");
@@ -130,13 +132,13 @@ begin
 
       V_Sense := Float (Conversion_Value (Temperature_Sensor.ADC.all));
 
-      Print (0, 0, Word (V_Sense));
+      Print (0, 0, UInt32 (V_Sense));
 
       Temperature := ((V_Sense - V_At_25_Degrees) / Avg_Slope) + 25.0;
       --  see the RM, section 13.10, pg 411
 
-      Print (0, 24, Word (Temperature), " degrees C");
+      Print (0, 24, UInt32 (Temperature), " degrees C");
 
-      Toggle (Green);
+      Green.Toggle;
    end loop;
 end Demo_ADC_Temperature_Polling;
