@@ -10,6 +10,7 @@ def list_of_boards():
             'STM32F769_Discovery',
             'Crazyflie',
             'OpenMV2',
+            'Numworks',
             "MicroBit",
             "HiFive1",
             'Native']
@@ -122,6 +123,22 @@ def load_board_config(config):
         config.pre_define('Has_Ravenscar_Full_Runtime', 'True', origin)
         config.pre_define('Runtime_Name_Suffix', 'openmv2', origin)
         config.add_source_dir('boards/OpenMV2/src/', origin)
+
+    if board == "Numworks":
+        config.pre_define('Architecture', 'ARM', origin)
+        config.pre_define('Vendor', 'STMicro', origin)
+        config.pre_define('Device_Family', 'STM32F4', origin)
+
+        # Numworks is actually running an STM32F12VGTx but our STM32F407
+        # support is close enough for now.
+        config.pre_define('Device_Name', 'STM32F407VGTx', origin)
+
+        config.pre_define('High_Speed_External_Clock', '25000000', origin)
+        config.pre_define('Has_ZFP_Runtime', 'False', origin)
+        config.pre_define('Has_Ravenscar_SFP_Runtime', 'True', origin)
+        config.pre_define('Has_Ravenscar_Full_Runtime', 'True', origin)
+        config.pre_define('Runtime_Name_Suffix', 'numworks', origin)
+        config.add_source_dir('boards/Numworks/src', origin)
 
     elif board == "MicroBit":
         config.pre_define('Architecture', 'ARM', origin)

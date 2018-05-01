@@ -1,0 +1,23 @@
+with "../../boards/Numworks/numworks_sfp";
+
+project Numworks_Example is
+
+   for Runtime ("ada") use Numworks_SFP'Runtime ("Ada");
+   for Target use Numworks_SFP'Target;
+
+   for Source_Dirs use ("src/", "../shared/common/gui/");
+   
+   for Languages use ("Ada");
+   for Object_Dir use "obj";
+   for Main use ("main.adb");
+   for Create_Missing_Dirs use "True";
+
+   package Compiler renames Numworks_SFP.Compiler;
+
+   package Linker is
+      for Default_Switches ("Ada") use ("-Wl,--print-memory-usage",
+                                        "-Wl,--gc-sections");
+   end Linker;
+
+end Numworks_Example;
+
