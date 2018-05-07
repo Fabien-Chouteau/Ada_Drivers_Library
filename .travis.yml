@@ -52,4 +52,7 @@ script:
   - python $PWD/scripts/build_all_examples.py
 
   # Start the testsuite
-  - python $PWD/testsuite/run.py
+  - python $PWD/testsuite/run.py --coverage
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
