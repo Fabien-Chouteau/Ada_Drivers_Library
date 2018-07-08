@@ -29,67 +29,12 @@
 --                                                                          --
 ------------------------------------------------------------------------------
 
-with System;
-with HAL;        use HAL;
-with HAL.Bitmap; use HAL.Bitmap;
+with Memory_Mapped_Bitmap; use Memory_Mapped_Bitmap;
 
-package Numworks.Display is
+package Numworks.Display.Frame_Buffer is
 
-   Width  : constant := 320;
-   Height : constant := 240;
+   function Buffer return not null Any_Memory_Mapped_Bitmap_Buffer;
 
-   procedure Set_Drawing_Area (Area : Rect);
+   procedure Update;
 
-   procedure Start_Pixel_Write;
-
-   procedure Push_Pixel (Pixel : HAL.UInt16);
-
-   procedure Push_Pixels (Pixels       : HAL.UInt16_Array;
-                          DMA_Theshold : Natural := 256);
-
-   procedure Wait_End_Of_Push;
-private
-
-   type Command is (Nop,
-                    Reset,
-                    Sleep_In,
-                    Sleep_Out,
-                    Display_Off,
-                    Display_On,
-                    Column_Address_Set,
-                    Page_Address_Set,
-                    Memory_Write,
-                    Memory_Read,
-                    Tearing_Effect_Line_On,
-                    Memory_Access_Control,
-                    Pixel_Format_Set,
-                    Frame_Rate_Control
-                   ) with Size => 16, Volatile_Full_Access;
-
-   for Command use (Nop                    => 16#00#,
-                    Reset                  => 16#01#,
-                    Sleep_In               => 16#10#,
-                    Sleep_Out              => 16#11#,
-                    Display_Off            => 16#28#,
-                    Display_On             => 16#29#,
-                    Column_Address_Set     => 16#2A#,
-                    Page_Address_Set       => 16#2B#,
-                    Memory_Write           => 16#2C#,
-                    Memory_Read            => 16#2E#,
-                    Tearing_Effect_Line_On => 16#35#,
-                    Memory_Access_Control  => 16#36#,
-                    Pixel_Format_Set       => 16#3A#,
-                    Frame_Rate_Control     => 16#C6#);
-
-   procedure Send_Command (Cmd  : Command;
-                           Data : UInt8_Array := (1 .. 0 => 0))
-     with Inline;
-   procedure Send_Command (Cmd  : Command;
-                           Data : UInt8)
-     with Inline;
-
-   procedure Start_DMA_Transfer (Addr  : System.Address;
-                                 Count : UInt16);
-   procedure Wait_DMA_Transfer;
-
-end Numworks.Display;
+end Numworks.Display.Frame_Buffer;

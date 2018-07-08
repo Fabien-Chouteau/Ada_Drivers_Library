@@ -29,10 +29,7 @@
 --                                                                          --
 ------------------------------------------------------------------------------
 
-with System;
 with Ada.Real_Time; use Ada.Real_Time;
-
-with HAL;          use HAL;
 
 with STM32.Device;         use STM32.Device;
 with STM32.GPIO;           use STM32.GPIO;
@@ -83,61 +80,10 @@ package body Numworks.Display is
      System'To_Address
        (FSMC_Bank_Address + (2**(FSMC_Data_Command_Address_Bit + 1)));
 
-   type Command is (Nop,
-                    Reset,
-                    Sleep_In,
-                    Sleep_Out,
-                    Display_Off,
-                    Display_On,
-                    Column_Address_Set,
-                    Page_Address_Set,
-                    Memory_Write,
-                    Memory_Read,
-                    Tearing_Effect_Line_On,
-                    Memory_Access_Control,
-                    Pixel_Format_Set,
-                    Frame_Rate_Control
-                   ) with Size => 16, Volatile_Full_Access;
-
-   for Command use (Nop                    => 16#00#,
-                    Reset                  => 16#01#,
-                    Sleep_In               => 16#10#,
-                    Sleep_Out              => 16#11#,
-                    Display_Off            => 16#28#,
-                    Display_On             => 16#29#,
-                    Column_Address_Set     => 16#2A#,
-                    Page_Address_Set       => 16#2B#,
-                    Memory_Write           => 16#2C#,
-                    Memory_Read            => 16#2E#,
-                    Tearing_Effect_Line_On => 16#35#,
-                    Memory_Access_Control  => 16#36#,
-                    Pixel_Format_Set       => 16#3A#,
-                    Frame_Rate_Control     => 16#C6#);
-
    Command_Register : Command with Address => Command_Address;
    Data_Register    : UInt16 with Address => Data_Address, Volatile;
 
-   Buffer_Data : UInt16_Array (0 .. Width * Height - 1);
-
-   Frame_Buffer : aliased Memory_Mapped_Bitmap_Buffer :=
-     (Addr              => Buffer_Data'Address,
-      Actual_Width      => 320,
-      Actual_Height     => 240,
-      Actual_Color_Mode => HAL.Bitmap.RGB_565,
-      Currently_Swapped => False,
-      Native_Source     => 0);
-
    procedure Initialize;
-   procedure Send_Command (Cmd  : Command;
-                           Data : UInt8_Array := (1 .. 0 => 0))
-     with Inline;
-   procedure Send_Command (Cmd  : Command;
-                           Data : UInt8)
-     with Inline;
-
-   procedure Start_DMA_Transfer (Addr  : System.Address;
-                                 Count : UInt16);
-   procedure Wait_DMA_Transfer;
 
    ----------------
    -- Initialize --
@@ -295,14 +241,50 @@ package body Numworks.Display is
                     ));
    end Set_Drawing_Area;
 
-   ------------
-   -- Buffer --
-   ------------
+   -----------------------
+   -- Start_Pixel_Write --
+   -----------------------
 
-   function Buffer return not null Any_Memory_Mapped_Bitmap_Buffer is
+   procedure Start_Pixel_Write is
    begin
-      return Frame_Buffer'Access;
-   end Buffer;
+      Send_Command (Memory_Write);
+   end Start_Pixel_Write;
+
+   ----------------
+   -- Push_Pixel --
+   ----------------
+
+   procedure Push_Pixel (Pixel : HAL.UInt16) is
+   begin
+      Data_Register := Pixel;
+   end Push_Pixel;
+
+   -----------------
+   -- Push_Pixels --
+   -----------------
+
+   procedure Push_Pixels (Pixels       : HAL.UInt16_Array;
+                          DMA_Theshold : Natural := 256)
+   is
+   begin
+      if Pixels'Length <= DMA_Theshold then
+         for Pixel of Pixels loop
+            Data_Register := Pixel;
+         end loop;
+      else
+         Wait_DMA_Transfer;
+         Start_DMA_Transfer (Pixels'Address, Pixels'Length);
+      end if;
+   end Push_Pixels;
+
+   ----------------------
+   -- Wait_End_Of_Push --
+   ----------------------
+
+   procedure Wait_End_Of_Push is
+   begin
+      Wait_DMA_Transfer;
+   end Wait_End_Of_Push;
 
    ------------------------
    -- Start_DMA_Transfer --
@@ -336,36 +318,6 @@ package body Numworks.Display is
          end if;
       end if;
    end Wait_DMA_Transfer;
-
-   ------------
-   -- Update --
-   ------------
-
-   procedure Update is
-      Index : Integer;
-      Count : UInt16;
-   begin
-
-      --  Parameters of the first transfer
-      Count := UInt16'Last;
-      Index := 0;
-
-      Send_Command (Memory_Write);
-
-      Start_DMA_Transfer (Buffer_Data (Index)'Address, Count);
-      Wait_DMA_Transfer;
-
-      --  Parameters of the second transfer
-      Count := (Width * Height) - UInt16'Last;
-      Index := Integer (UInt16'Last);
-
-      Start_DMA_Transfer (Buffer_Data (Index)'Address, Count);
-      Wait_DMA_Transfer;
---
---        for Pix of Buffer_Data loop
---           Data_Register := Pix;
---        end loop;
-   end Update;
 
 begin
    Initialize;
