@@ -29,12 +29,23 @@
 --                                                                          --
 ------------------------------------------------------------------------------
 
-with Ada.Real_Time; use Ada.Real_Time;
+with Ada.Real_Time;            use Ada.Real_Time;
 with Ada.Text_IO;
+with System.Storage_Elements;  use System.Storage_Elements;
+with Ada.Unchecked_Conversion;
+with Hex_Dump;
 
 package body DWC_OTG_FS is
 
    Rx_FIFO_Size : constant := 64;
+
+   type U8_Index is mod 4;
+   type U8_Array is array (U8_Index) of UInt8
+     with Pack, Size => 4 * 8;
+   --  4 x Byte array used for un-aligned read/write to the FIFOs
+
+   function To_U8_Array is new Ada.Unchecked_Conversion (UInt32, U8_Array);
+   function To_U32 is new Ada.Unchecked_Conversion (U8_Array, UInt32);
 
    Verbose : constant Boolean := False;
    procedure Put_Line (Str : String);
@@ -707,36 +718,47 @@ package body DWC_OTG_FS is
                              Addr : System.Address;
                              Len  : UInt32)
    is
-      pragma Unreferenced (EP);
+      pragma Unreferenced (EP); -- Only on RX FIFO for all EPs
 
-      --        Cnt_8  : UInt32 := UInt32'Min (Len, UInt32 (This.RX_BCNT));
-      Cnt_8 : UInt32 := Len;
-      Cnt_32 : constant UInt32 := (Cnt_8 + 3) / 4;
+      Actual_Len : constant UInt32 := UInt32'Min (Len, UInt32 (This.RX_BCNT));
 
-      Buf_32  : UInt32_Array (1 .. Integer (Cnt_32)) with Address => Addr;
-      Buf_8  : UInt8_Array (1 .. Integer (Cnt_8)) with Address => Addr;
-
-      Data : UInt32;
    begin
 
-      for Index in Buf_32'Range loop
-         Data := RX_FIFO;
-         Buf_32 (Index) := Data;
-         if Verbose then
-            Put_Line ("Cnt:" & Cnt_8'Img);
-            Put_Line ("FIFO:" & Data'Img);
-         end if;
-         This.RX_BCNT := This.RX_BCNT - 4;
-         Cnt_8 := Cnt_8 - 4;
-      end loop;
+      if To_Integer (Addr) mod 4 /= 0 then
 
-      if Cnt_8 > 0 then
-         raise Program_Error with "Not implemented";
---           Last := FIFO;
---           Put_Line ("Cnt:" & Cnt'Img);
---           Put_Line ("Last:" & Last'Img);
+         --  The buffer is _not_ aligned
+
+         declare
+            Buf_8 : UInt8_Array (1 .. Integer (Actual_Len))
+              with Address => Addr;
+            Arr : U8_Array;
+            Conv_Index : U8_Index := U8_Index'First;
+         begin
+            for Index in Buf_8'Range loop
+
+               if Conv_Index = U8_Index'First then
+                  Arr := To_U8_Array (RX_FIFO);
+               end if;
+
+               Buf_8 (Index) := Arr (Conv_Index);
+               Conv_Index := Conv_Index + 1;
+            end loop;
+         end;
+      else
+
+         --  The buffer is aligned
+
+         declare
+            Cnt_32 : constant UInt32 := (Actual_Len + 3) / 4;
+            Buf_32  : UInt32_Array (1 .. Integer (Cnt_32)) with Address => Addr;
+         begin
+            for Index in Buf_32'Range loop
+               Buf_32 (Index) := RX_FIFO;
+            end loop;
+         end;
       end if;
 
+      This.RX_BCNT := This.RX_BCNT - UInt11 (Actual_Len);
    end EP_Read_Packet;
 
    ---------------------
@@ -750,11 +772,8 @@ package body DWC_OTG_FS is
                               Len  : UInt32)
    is
       pragma Unreferenced (This);
-      Cnt_8  : UInt32 := Len;
-      Cnt_32 : constant UInt32 := (Cnt_8 + 3) / 4;
-
+      Cnt_8  : constant UInt32 := Len;
       Buf_8  : UInt8_Array (1 .. Integer (Cnt_8)) with Address => Addr;
-      Buf_32  : UInt32_Array (1 .. Integer (Cnt_32)) with Address => Addr;
    begin
 
       if Len > UInt32 (UInt7'Last) then
@@ -781,19 +800,51 @@ package body DWC_OTG_FS is
          raise Program_Error with "Invalid EP in write packet";
       end if;
 
+      Hex_Dump.Hex_Dump (Buf_8, Ada.Text_IO.Put_Line'Access);
+
       declare
          TX_FIFO : aliased UInt32
            with Size => 32,
            Volatile_Full_Access,
            Address =>
              System'To_Address (Base_Address + 16#1000# + 16#1000# * UInt32 (Ep));
-      begin
-         for Elt of Buf_32 loop
-            TX_FIFO := Elt;
-            Cnt_8 := Cnt_8 - 4;
-         end loop;
-      end;
 
+      begin
+         if To_Integer (Addr) mod 4 /= 0 then
+
+            --  The buffer is _not_ aligned
+
+            declare
+               Arr        : U8_Array;
+               Conv_Index : U8_Index := U8_Index'First;
+            begin
+               for Elt of Buf_8 loop
+                  Arr (Conv_Index) := Elt;
+
+                  if Conv_Index = U8_Index'Last then
+                     TX_FIFO := To_U32 (Arr);
+                  end if;
+
+                  Conv_Index := Conv_Index + 1;
+               end loop;
+
+               if Conv_Index /= U8_Index'First then
+                  TX_FIFO := To_U32 (Arr);
+               end if;
+            end;
+
+         else
+            --  The buffer is aligned
+            declare
+               Cnt_32 : constant Integer := Integer (Len + 3) / 4;
+               Buf_32  : UInt32_Array (1 .. Cnt_32) with Address => Addr;
+            begin
+               for Elt of Buf_32 loop
+                  TX_FIFO := Elt;
+               end loop;
+            end;
+         end if;
+      end;
    end EP_Write_Packet;
 
    ----------
@@ -965,10 +1016,13 @@ package body DWC_OTG_FS is
             if RX_Status.PKTSTS = PKTSTS_OUT then
 
                Put_Line ("PKTSTS_OUT");
+               This.RX_BCNT := RX_Status.BCNT;
                return (Kind    => Data_Ready,
                        RX_EP   => RX_Status.EPNUM,
                        RX_BCNT => RX_Status.BCNT);
             elsif RX_Status.PKTSTS = PKTSTS_SETUP then
+
+               This.RX_BCNT := RX_Status.BCNT;
 
                --  Receive a setup packet
                This.EP_Read_Packet (RX_Status.EPNUM,
