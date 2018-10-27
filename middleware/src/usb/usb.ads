@@ -97,6 +97,12 @@ package USB is
                            return Setup_Request_Answer
    is abstract;
 
+   function Setup_Write_Request (This  : in out USB_Device_Class;
+                                 Req   : HAL.USB.Setup_Data;
+                                 Data  : UInt8_Array)
+                                 return Setup_Request_Answer
+   is abstract;
+
    procedure Transfer_Complete (This : in out USB_Device_Class;
                                 UDC  : in out USB_Device_Controller'Class;
                                 EP   : HAL.USB.EP_Addr)
@@ -152,6 +158,11 @@ private
    type Device_State is (Idle, Addressed, Configured, Suspended);
 
    type USB_Device is tagged record
+
+      --  For better performances this buffer has to be word aligned. So we put
+      --  it as the first field of this record.
+      RX_Ctrl_Buf : UInt8_Array (1 .. 256);
+
       UDC     : Any_USB_Device_Controller := null;
       Class   : Any_USB_Device_Class := null;
       Desc    : access constant Device_Descriptor := null;
@@ -167,7 +178,6 @@ private
       Ctrl_State : Control_State := Idle;
       Ctrl_Need_ZLP : Boolean := False;
 
-      RX_Ctrl_Buf : UInt8_Array (1 .. 256);
    end record;
 
 end USB;

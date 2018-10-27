@@ -162,6 +162,17 @@ package body USB.Device.HID is
       return Not_Supported;
    end Setup_Request;
 
+   -------------------------
+   -- Setup_Write_Request --
+   -------------------------
+
+   overriding
+   function Setup_Write_Request (This  : in out Default_HID_Class;
+                                 Req   : HAL.USB.Setup_Data;
+                                 Data  : UInt8_Array)
+                                 return Setup_Request_Answer
+   is (Not_Supported);
+
    -----------------------
    -- Transfer_Complete --
    -----------------------

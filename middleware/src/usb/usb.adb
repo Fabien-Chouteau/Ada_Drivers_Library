@@ -64,6 +64,10 @@ package body USB is
                                       return Setup_Request_Answer;
    --  Handle setup read request
 
+   function Control_Dispatch_Write_Request (This : in out USB_Device)
+                                            return Setup_Request_Answer;
+
+
    function Control_Device_Request  (This : in out USB_Device;
                                       Req  : Setup_Data)
                                       return Setup_Request_Answer;
@@ -82,6 +86,7 @@ package body USB is
                                return Setup_Request_Answer;
 
    procedure Control_Send_Chunk (This : in out USB_Device);
+   procedure Control_Receive_Chunk (This : in out USB_Device);
 
    function Need_ZLP (Len     : Buffer_Len;
                       wLength : UInt16;
@@ -277,6 +282,20 @@ package body USB is
       end case;
    end Control_Dispatch_Request;
 
+   ------------------------------------
+   -- Control_Dispatch_Write_Request --
+   ------------------------------------
+
+   function Control_Dispatch_Write_Request (This : in out USB_Device)
+                                            return Setup_Request_Answer
+   is
+   begin
+
+      --  If we don't know how to handle this request, fallback to the class
+      return This.Class.Setup_Write_Request (This.Ctrl_Req,
+                                             This.RX_Ctrl_Buf (1 .. Natural (This.Ctrl_Len)));
+   end Control_Dispatch_Write_Request;
+
    ------------------------
    -- Control_Send_Chunk --
    ------------------------
@@ -308,6 +327,24 @@ package body USB is
       end if;
    end Control_Send_Chunk;
 
+   ---------------------------
+   -- Control_Receive_Chunk --
+   ---------------------------
+
+   procedure Control_Receive_Chunk (This : in out USB_Device) is
+      Read_Size : constant Buffer_Len :=
+        Buffer_Len'Min (Buffer_Len (This.Desc.bMaxPacketSize0),
+                        Buffer_Len (This.Ctrl_Req.Length) - This.Ctrl_Len);
+   begin
+
+      This.UDC.EP_Read_Packet (Ep   => 0,
+                               Addr => This.Ctrl_Buf,
+                               Len  => UInt32 (Read_Size));
+
+      This.Ctrl_Len := This.Ctrl_Len + Read_Size;
+      This.Ctrl_Buf := This.Ctrl_Buf + Read_Size;
+   end Control_Receive_Chunk;
+
    ------------------------
    -- Control_Setup_Read --
    ------------------------
@@ -318,7 +355,6 @@ package body USB is
    begin
       Put_Line ("Control_Setup_Read");
       if Control_Dispatch_Request (This, Req) /= Not_Supported then
-
 
          if Req.Length > 0 then
 
@@ -359,7 +395,10 @@ package body USB is
          return;
       end if;
 
+      --  Get ready to recieve the data
+
       This.Ctrl_Len := 0;
+      This.Ctrl_Buf := This.RX_Ctrl_Buf'Address;
 
       if Req.Length > UInt16 (This.Desc.bMaxPacketSize0) then
          This.Ctrl_State := Data_Out;
@@ -484,7 +523,6 @@ package body USB is
 
             This.Ctrl_State := Idle;
 
-
          when others =>
             --  FIXME: Stall transaction
             raise Program_Error with "should stall";
@@ -512,6 +550,30 @@ package body USB is
             This.Ctrl_State := Idle;
 
             --  FIXME: Callback?
+
+         when Data_Out =>
+
+            --  Receive a chunk
+            Control_Receive_Chunk (This);
+
+            --  Check if the next chunk is going to be the last
+            if (Buffer_Len (This.Ctrl_Req.Length) - This.Ctrl_Len) <= Buffer_Len (This.Desc.bMaxPacketSize0)
+            then
+               This.Ctrl_State := Last_Data_Out;
+            end if;
+
+         when Last_Data_Out =>
+
+            --  Receive the last chunk
+            Control_Receive_Chunk (This);
+
+            if Control_Dispatch_Write_Request (This) = Handled then
+               --  zero-length-packet to ack the setup req
+               This.UDC.EP_Write_Packet (0, System.Null_Address, 0);
+               This.Ctrl_State := Status_In;
+            else
+               raise Program_Error with "should stall";
+            end if;
 
          when others =>
             --  FIXME: Stall transaction

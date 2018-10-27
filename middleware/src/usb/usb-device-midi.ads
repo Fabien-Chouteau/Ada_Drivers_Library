@@ -50,6 +50,12 @@ package USB.Device.MIDI is
                            return Setup_Request_Answer;
 
    overriding
+   function Setup_Write_Request (This  : in out Default_MIDI_Class;
+                                 Req   : HAL.USB.Setup_Data;
+                                 Data  : UInt8_Array)
+                                 return Setup_Request_Answer;
+
+   overriding
    procedure Transfer_Complete (This : in out Default_MIDI_Class;
                                 UDC  : in out USB_Device_Controller'Class;
                                 EP   : HAL.USB.EP_Addr);
