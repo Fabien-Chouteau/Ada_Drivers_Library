@@ -126,5 +126,15 @@ package HAL.USB.Device is
    --  setup request. For some reason, this is required for the USB controller
    --  of the STM32F series.
 
+   function Img (Evt : UDC_Event) return String
+   is (case Evt.Kind is
+          when Setup_Request =>
+             Evt.Kind'Img & " " & Img (EP_Addr'(Evt.Req_EP, EP_Out)) & " " & Img (Evt.Req),
+          when Data_Ready =>
+             Evt.Kind'Img & " " & Img (EP_Addr'(Evt.RX_EP, EP_Out)) & " BCNT:" & Evt.RX_BCNT'Img,
+          when Transfer_Complete =>
+             Evt.Kind'Img & " " & Img (Evt.T_EP),
+          when others =>
+            Evt.Kind'Img);
 
 end HAL.USB.Device;

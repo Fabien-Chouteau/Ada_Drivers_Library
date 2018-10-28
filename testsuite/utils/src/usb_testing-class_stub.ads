@@ -29,66 +29,55 @@
 --                                                                          --
 ------------------------------------------------------------------------------
 
-package HAL.USB is
+--  USB Device Class stub for testing
 
-   subtype EP_Id is UInt4;
+with System;
 
-   type EP_Dir is (EP_In, EP_Out);
+with HAL;            use HAL;
+with HAL.USB;        use HAL.USB;
+with HAL.USB.Device; use HAL.USB.Device;
+with USB;
 
-   type EP_Addr is record
-      Num : EP_Id;
-      Dir : EP_Dir;
-   end record;
+package USB_Testing.Class_Stub is
 
-   type EP_Type is (Control, Isochronous, Bulk, Interrupt);
-   for EP_Type use (Control     => 0,
-                    Isochronous => 1,
-                    Bulk        => 2,
-                    Interrupt   => 3);
+   type Device_Class_Stub
+   is new USB.USB_Device_Class
+   with private;
 
-   type Data_Phase_Transfer_Direction is (Host_To_Device,
-                                          Device_To_Host)
-     with Size => 1;
+   overriding
+   function Configure (This  : in out Device_Class_Stub;
+                       UDC   : in out USB_Device_Controller'Class;
+                       Index : UInt16)
+                       return USB.Setup_Request_Answer;
 
-   for Data_Phase_Transfer_Direction use (Host_To_Device => 0,
-                                          Device_To_Host => 1);
+   overriding
+   function Setup_Request (This  : in out Device_Class_Stub;
+                           Req   : HAL.USB.Setup_Data;
+                           Buf   : out System.Address;
+                           Len   : out USB.Buffer_Len)
+                           return USB.Setup_Request_Answer;
 
-   type Request_Type_Type is (Stand, Class, Vendor, Reserved)
-     with Size => 2;
-   for Request_Type_Type use (Stand    => 0,
-                              Class    => 1,
-                              Vendor   => 2,
-                              Reserved => 3);
+   overriding
+   function Setup_Write_Request (This  : in out Device_Class_Stub;
+                                 Req   : HAL.USB.Setup_Data;
+                                 Data  : UInt8_Array)
+                                 return USB.Setup_Request_Answer;
 
-   type Request_Type_Recipient is (Dev, Iface, Endpoint, Other);
-   for Request_Type_Recipient use (Dev      => 0,
-                                   Iface    => 1,
-                                   Endpoint => 2,
-                                   Other    => 3);
-   type Request_Type is record
-      Recipient : Request_Type_Recipient;
-      Reserved  : UInt3;
-      Typ : Request_Type_Type;
-      Dir : Data_Phase_Transfer_Direction;
-   end record with Pack, Size => 8;
+   overriding
+   procedure Transfer_Complete (This : in out Device_Class_Stub;
+                                UDC  : in out USB_Device_Controller'Class;
+                                EP   : HAL.USB.EP_Addr);
 
-   type Setup_Data is record
-      RType   : Request_Type;
-      Request : UInt8;
-      Value   : UInt16;
-      Index   : UInt16;
-      Length  : UInt16;
-   end record with Pack, Size => 8 * 8;
+   overriding
+   procedure Data_Ready (This : in out Device_Class_Stub;
+                         UDC  : in out USB_Device_Controller'Class;
+                         EP   : HAL.USB.EP_Id;
+                         BCNT : UInt32);
 
-   function Img (D : Setup_Data) return String
-   is ("Type: (" & D.RType.Dir'Img & "," & D.RType.Typ'Img & "," &
-         D.RType.Recipient'Img & ")" &
-         " Req:" & D.Request'Img &
-         " Val:" & D.Value'Img &
-         " Index:" & D.Index'Img &
-         " Len:" & D.Length'Img);
+private
 
-   function Img (EP : EP_Addr) return String
-   is ("["  & EP.Dir'Img & EP.Num'Img & "]");
+   type Device_Class_Stub
+   is new USB.USB_Device_Class
+   with null record;
 
-end HAL.USB;
+end USB_Testing.Class_Stub;

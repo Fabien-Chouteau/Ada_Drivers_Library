@@ -29,66 +29,52 @@
 --                                                                          --
 ------------------------------------------------------------------------------
 
-package HAL.USB is
+with USB_Testing.UDC_Stub;
+with USB_Testing.Class_Stub;
 
-   subtype EP_Id is UInt4;
+with HAL;            use HAL;
+with HAL.USB;        use HAL.USB;
+with HAL.USB.Device; use HAL.USB.Device;
 
-   type EP_Dir is (EP_In, EP_Out);
+with USB;
 
-   type EP_Addr is record
-      Num : EP_Id;
-      Dir : EP_Dir;
-   end record;
+procedure TC_Device_Descriptor is
 
-   type EP_Type is (Control, Isochronous, Bulk, Interrupt);
-   for EP_Type use (Control     => 0,
-                    Isochronous => 1,
-                    Bulk        => 2,
-                    Interrupt   => 3);
+   Scenario : aliased USB_Testing.UDC_Stub.Stub_Scenario :=
+     (1 => (Kind => Reset)
 
-   type Data_Phase_Transfer_Direction is (Host_To_Device,
-                                          Device_To_Host)
-     with Size => 1;
+      , 2 => (Kind   => Setup_Request,
+              Req    => ((Dev, 0, Stand, Device_To_Host),
+                         6, 16#100#, 0, 64),
+              Req_EP => 0)
 
-   for Data_Phase_Transfer_Direction use (Host_To_Device => 0,
-                                          Device_To_Host => 1);
+      , 3 => (Kind => Transfer_Complete, T_EP => (0, EP_In))
+      );
 
-   type Request_Type_Type is (Stand, Class, Vendor, Reserved)
-     with Size => 2;
-   for Request_Type_Type use (Stand    => 0,
-                              Class    => 1,
-                              Vendor   => 2,
-                              Reserved => 3);
+   RX_Data : aliased UInt8_Array := (0 .. 1 => 0);
 
-   type Request_Type_Recipient is (Dev, Iface, Endpoint, Other);
-   for Request_Type_Recipient use (Dev      => 0,
-                                   Iface    => 1,
-                                   Endpoint => 2,
-                                   Other    => 3);
-   type Request_Type is record
-      Recipient : Request_Type_Recipient;
-      Reserved  : UInt3;
-      Typ : Request_Type_Type;
-      Dir : Data_Phase_Transfer_Direction;
-   end record with Pack, Size => 8;
+   Configuration : aliased constant UInt8_Array := (0 .. 1 => 0);
 
-   type Setup_Data is record
-      RType   : Request_Type;
-      Request : UInt8;
-      Value   : UInt16;
-      Index   : UInt16;
-      Length  : UInt16;
-   end record with Pack, Size => 8 * 8;
+   Class : aliased USB_Testing.Class_Stub.Device_Class_Stub;
 
-   function Img (D : Setup_Data) return String
-   is ("Type: (" & D.RType.Dir'Img & "," & D.RType.Typ'Img & "," &
-         D.RType.Recipient'Img & ")" &
-         " Req:" & D.Request'Img &
-         " Val:" & D.Value'Img &
-         " Index:" & D.Index'Img &
-         " Len:" & D.Length'Img);
+   UDC : aliased USB_Testing.UDC_Stub.Controller (Scenario'Unchecked_Access,
+                                                  RX_Data'Unchecked_Access,
+                                                  Has_Early_Address => False);
+   Ctrl : USB.USB_Device;
+begin
 
-   function Img (EP : EP_Addr) return String
-   is ("["  & EP.Dir'Img & EP.Num'Img & "]");
+   Ctrl.Initalize (Controller => UDC'Unchecked_Access,
+                   Class      => Class'Unchecked_Access,
+                   Dec        => USB_Testing.UDC_Stub.Desc'Unchecked_Access,
+                   Config     => Configuration'Unchecked_Access,
+                   Strings    => USB_Testing.UDC_Stub.Strings'Unchecked_Access);
 
-end HAL.USB;
+   Ctrl.Start;
+
+   loop
+      Ctrl.Poll;
+      pragma Warnings (Off, "possible infinite loop");
+      exit when UDC.End_Of_Scenario;
+      pragma Warnings (On, "possible infinite loop");
+   end loop;
+end TC_Device_Descriptor;

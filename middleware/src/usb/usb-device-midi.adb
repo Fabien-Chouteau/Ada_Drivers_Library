@@ -77,7 +77,7 @@ package body USB.Device.MIDI is
                            return Setup_Request_Answer
    is
    begin
-      Ada.Text_IO.Put_Line (Image (Req));
+      Ada.Text_IO.Put_Line (Img (Req));
 
       Buf := System.Null_Address;
       Len := 0;

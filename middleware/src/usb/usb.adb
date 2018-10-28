@@ -423,7 +423,7 @@ package body USB is
       This.UDC.EP_Set_NAK ((EP, EP_Out), True);
 
       if Verbose then
-         Put_Line ("Req: " & Image (Req));
+         Put_Line ("Req: " & Img (Req));
       end if;
 
       if Req.RType.Dir = Device_To_Host or else Req.Length = 0 then
