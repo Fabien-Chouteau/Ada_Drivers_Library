@@ -12,6 +12,12 @@ ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 TESTS_DIR = os.path.join(ROOT_DIR, 'testsuite', 'tests')
 
 
+def is_exec(fpath):
+    return os.path.exists(fpath) and \
+           os.access(fpath, os.X_OK) and \
+           os.path.isfile(fpath)
+
+
 def run_program(*argv):
     p = subprocess.Popen(
         argv,
@@ -94,6 +100,10 @@ class Testcase:
         """
         Helper for run, execute a single test driver.
         """
+
+        if not is_exec(program):
+            return "No text executable: '%s'" % program
+
         # Get the expected output
         with open(expected_output_fn, 'r') as f:
             expected_output = f.read()
