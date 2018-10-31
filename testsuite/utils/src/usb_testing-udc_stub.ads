@@ -95,11 +95,16 @@ package USB_Testing.UDC_Stub is
      );
    --  String descriptor than can be used for testing
 
-   type Stub_Scenario is array (Natural range <>) of UDC_Event;
+   type Scenario_Event is record
+      Verbose : Boolean := True;
+      Evt     : UDC_Event;
+   end record;
+
+   type Stub_Scenario is array (Natural range <>) of Scenario_Event;
 
    type Controller
-     (Scenario          : not null access Stub_Scenario;
-      RX_Data           : not null access UInt8_Array;
+     (Scenario          : not null access constant Stub_Scenario;
+      RX_Data           : not null access constant UInt8_Array;
       Has_Early_Address : Boolean)
    is new HAL.USB.Device.USB_Device_Controller
    with private;
@@ -177,15 +182,28 @@ private
    type EP_Stub_Array is array (EP_Id range <>) of EP_Stub_Couple;
 
    type Controller
-     (Scenario          : not null access Stub_Scenario;
-      RX_Data           : not null access UInt8_Array;
+     (Scenario          : not null access constant Stub_Scenario;
+      RX_Data           : not null access constant UInt8_Array;
       Has_Early_Address : Boolean)
    is new HAL.USB.Device.USB_Device_Controller
    with record
       Scenario_Index : Natural := Scenario.all'First;
       RX_Index       : Natural := RX_Data.all'First;
 
+      Verbose        : Boolean := True;
+
       EPs            : EP_Stub_Array (0 .. 5); -- Arbitrary number of EP
    end record;
 
+   procedure Put_Line (This : Controller;
+                       Str  : String);
+   --  Print on the console iff in verbose mode
+
+   procedure Put (This : Controller;
+                  Str  : String);
+   --  Print on the console iff in verbose mode
+
+   procedure Hex_Dump (This : Controller;
+                       Data : HAL.UInt8_Array);
+   --  Print on the console iff in verbose mode
 end USB_Testing.UDC_Stub;

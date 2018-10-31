@@ -29,7 +29,7 @@
 --                                                                          --
 ------------------------------------------------------------------------------
 
-with Ada.Text_IO; use Ada.Text_IO;
+with Ada.Text_IO;
 with Hex_Dump;
 
 package body USB_Testing.UDC_Stub is
@@ -47,7 +47,7 @@ package body USB_Testing.UDC_Stub is
 
    procedure Reset (This : in out Controller'Class) is
    begin
-      Put_Line ("UDC Reset EPs");
+      This.Put_Line ("UDC Reset EPs");
       for EP_Couple of This.EPs loop
          for EP of EP_Couple loop
             EP := (others => <>);
@@ -107,10 +107,10 @@ package body USB_Testing.UDC_Stub is
                  Prefix & "EP stalled for Data_Ready";
             end if;
 
-            if UInt16 (Evt.RX_BCNT) > This.EPs (Evt.Req_EP) (EP_Out).Max_Size
+            if UInt16 (Evt.RX_BCNT) > This.EPs (Evt.RX_EP) (EP_Out).Max_Size
             then
                raise Program_Error with
-                 Prefix & "EP packet to big for EP in Data_Ready";
+                 Prefix & "packet to big for EP in Data_Ready";
             end if;
 
          when Transfer_Complete =>
@@ -150,7 +150,7 @@ package body USB_Testing.UDC_Stub is
    procedure Initialize (This : in out Controller)
    is
    begin
-      Put_Line ("UDC Initialize");
+      This.Put_Line ("UDC Initialize");
 
       Reset (This);
    end Initialize;
@@ -162,9 +162,8 @@ package body USB_Testing.UDC_Stub is
    overriding
    procedure Start (This : in out Controller)
    is
-      pragma Unreferenced (This);
    begin
-      Put_Line ("UDC Start");
+      This.Put_Line ("UDC Start");
    end Start;
 
    ----------
@@ -177,13 +176,22 @@ package body USB_Testing.UDC_Stub is
    is
       Ret : constant UDC_Event :=
         (if This.Scenario_Index in This.Scenario'Range then
-            This.Scenario (This.Scenario_Index)
+            This.Scenario (This.Scenario_Index).Evt
          else
             No_Event);
    begin
-      This.Scenario_Index := This.Scenario_Index + 1;
+      if This.Scenario_Index in This.Scenario'Range then
 
-      Put_Line ("UDC Poll -> " & Img (Ret));
+         if This.Scenario (This.Scenario_Index).Verbose /= This.Verbose then
+            This.Verbose := not This.Verbose;
+            Ada.Text_IO.Put_Line ("UDC Verbose "  & (if This.Verbose then
+                                     "on" else "off"));
+         end if;
+
+         This.Scenario_Index := This.Scenario_Index + 1;
+      end if;
+
+      This.Put_Line ("UDC Poll -> " & Img (Ret));
 
       Check_Event (This, Ret);
 
@@ -234,9 +242,10 @@ package body USB_Testing.UDC_Stub is
                              Addr : System.Address;
                              Len  : UInt32)
    is
-      pragma Unreferenced (Addr);
+      Data : UInt8_Array (1 .. Natural (Len)) with Address => Addr;
    begin
-      Put_Line ("UDC EP_Read_Packet " & Img (EP_Addr'(Ep, EP_Out)));
+      This.Put_Line ("UDC EP_Read_Packet " & Img (EP_Addr'(Ep, EP_Out)) &
+                       " Len:" & Len'Img);
 
       if Ep not in This.EPs'Range then
          raise Program_Error with "UDC Error: invalid EP number in EP_Read_Packet";
@@ -250,14 +259,23 @@ package body USB_Testing.UDC_Stub is
          raise Program_Error with "UDC Error: EP stalled in EP_Read_Packet";
       end if;
 
-      if Len > UInt32 (This.EPs (Ep) (EP_In).Bytes_Available) then
+      if Len > UInt32 (This.EPs (Ep) (EP_Out).Bytes_Available) then
          raise Program_Error with "UDC Error: Trying to read too much data in EP_Read_Packet";
       end if;
 
       This.EPs (Ep) (EP_In).Bytes_Available :=
         This.EPs (Ep) (EP_In).Bytes_Available - UInt11 (Len);
 
-      raise Program_Error with "FIXME: Read data from the Stub RX_Data";
+      for Elt of Data loop
+         if This.RX_Index in This.RX_Data'Range then
+            Elt := This.RX_Data (This.RX_Index);
+            This.RX_Index := This.RX_Index + 1;
+         else
+            raise Program_Error with "UDC Error: Not enough data in RX_Data";
+         end if;
+      end loop;
+
+      This.Hex_Dump (Data);
    end EP_Read_Packet;
 
    ---------------------
@@ -271,8 +289,10 @@ package body USB_Testing.UDC_Stub is
                               Len  : UInt32)
    is
       Data : UInt8_Array (1 .. Natural (Len)) with Address => Addr;
+
    begin
-      Put_Line ("UDC EP_Write_Packet " & Img (EP_Addr'(Ep, EP_In)));
+      This.Put_Line ("UDC EP_Write_Packet " & Img (EP_Addr'(Ep, EP_In)) &
+                    (if Len = 0 then " ZLP" else ""));
 
       if Ep not in This.EPs'Range then
          raise Program_Error with "UDC Error: invalid EP number in EP_Write";
@@ -290,7 +310,7 @@ package body USB_Testing.UDC_Stub is
          raise Program_Error with "UDC Error: Packet too big in EP_Write_Packet";
       end if;
 
-      Hex_Dump.Hex_Dump (Data, Put_Line'Access);
+      This.Hex_Dump (Data);
 
    end EP_Write_Packet;
 
@@ -307,12 +327,12 @@ package body USB_Testing.UDC_Stub is
    is
       pragma Unreferenced (Callback);
    begin
-      Put_Line ("UDC EP_Setup " & Img (EP) &
-                  " Type: " & Typ'Img &
-                  " Max_Size:" & Max_Size'Img);
+      This.Put_Line ("UDC EP_Setup " & Img (EP) &
+                       " Type: " & Typ'Img &
+                       " Max_Size:" & Max_Size'Img);
 
       if EP.Num not in This.EPs'Range then
-         raise Program_Error with "UDC Error invalid EP number in EP_Setup";
+         raise Program_Error with "UDC Error: invalid EP number in EP_Setup";
       end if;
 
       This.EPs (EP.Num) (EP.Dir).Setup := True;
@@ -330,13 +350,14 @@ package body USB_Testing.UDC_Stub is
                          NAK  : Boolean)
    is
    begin
-      Put_Line ("UDC EP_Set_NAK " & Img (EP) & " " & NAK'Img);
+      This.Put_Line ("UDC EP_Set_NAK " & Img (EP) & " " & NAK'Img);
+
       if EP.Dir /= EP_Out then
-         raise Program_Error with "UDC Error cannot NAK IN endpoints";
+         raise Program_Error with "UDC Error: cannot NAK IN endpoints";
       end if;
 
       if EP.Num not in This.EPs'Range then
-         raise Program_Error with "UDC Error invalid EP number in EP_Set_NAK";
+         raise Program_Error with "UDC Error: invalid EP number in EP_Set_NAK";
       end if;
 
       This.EPs (EP.Num) (EP.Dir).NAK := NAK;
@@ -351,10 +372,10 @@ package body USB_Testing.UDC_Stub is
                            EP   : EP_Addr)
    is
    begin
-      Put_Line ("UDC EP_Set_NAK " & Img (EP));
+      This.Put_Line ("UDC EP_Set_NAK " & Img (EP));
 
       if EP.Num not in This.EPs'Range then
-         raise Program_Error with "UDC Error invalid EP number in EP_Set_Stall";
+         raise Program_Error with "UDC Error: invalid EP number in EP_Set_Stall";
       end if;
 
       This.EPs (EP.Num) (EP.Dir).Stall := True;
@@ -368,10 +389,47 @@ package body USB_Testing.UDC_Stub is
    procedure Set_Address (This : in out Controller;
                           Addr : UInt7)
    is
-      pragma Unreferenced (This);
    begin
-      Put_Line ("UDC Set_Address" & Addr'Img);
+      This.Put_Line ("UDC Set_Address" & Addr'Img);
    end Set_Address;
 
+   --------------
+   -- Put_Line --
+   --------------
+
+   procedure Put_Line (This : Controller;
+                       Str  : String)
+   is
+   begin
+      if This.Verbose then
+         Ada.Text_IO.Put_Line (Str);
+      end if;
+   end Put_Line;
+
+   ---------
+   -- Put --
+   ---------
+
+   procedure Put (This : Controller;
+                  Str  : String)
+   is
+   begin
+      if This.Verbose then
+         Ada.Text_IO.Put (Str);
+      end if;
+   end Put;
+
+   --------------
+   -- Hex_Dump --
+   --------------
+
+   procedure Hex_Dump (This : Controller;
+                       Data : HAL.UInt8_Array)
+   is
+   begin
+      if This.Verbose then
+         Standard.Hex_Dump.Hex_Dump (Data, Ada.Text_IO.Put_Line'Access);
+      end if;
+   end Hex_Dump;
 
 end USB_Testing.UDC_Stub;

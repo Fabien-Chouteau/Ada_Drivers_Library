@@ -6,10 +6,11 @@ with HAL; use HAL;
 
 with USB;
 
-procedure TC_Device_Descriptor is
+procedure TC_Set_Address is
 
    Scenario : aliased constant UDC_Stub.Stub_Scenario :=
-     UDC_Scenarios.Enumeration (Verbose => True);
+     UDC_Scenarios.Enumeration (Verbose => False) &
+     UDC_Scenarios.Set_Address (Verbose => True);
 
    RX_Data : aliased constant UInt8_Array := (0 .. 1 => 0);
 
@@ -17,4 +18,4 @@ begin
 
    USB_Testing.UDC_Scenarios.Basic_UDC_Test (Scenario, RX_Data);
 
-end TC_Device_Descriptor;
+end TC_Set_Address;

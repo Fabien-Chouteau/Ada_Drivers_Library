@@ -30,6 +30,7 @@
 ------------------------------------------------------------------------------
 
 with Ada.Text_IO; use Ada.Text_IO;
+with Hex_Dump;
 
 package body USB_Testing.Class_Stub is
 
@@ -77,9 +78,10 @@ package body USB_Testing.Class_Stub is
                                  Data  : UInt8_Array)
                                  return USB.Setup_Request_Answer
    is
-      pragma Unreferenced (This, Data);
+      pragma Unreferenced (This);
    begin
       Put_Line ("USB Class Setup_Request " & Img (Req));
+      Hex_Dump.Hex_Dump (Data, Put_Line'Access);
       return USB.Not_Supported;
    end Setup_Write_Request;
 

@@ -4,7 +4,10 @@ project TC extends "../../utils/test_utils.gpr" is
 
    for Languages use ("Ada");
    for Source_Dirs use ("src");
-   for Main use ("tc_device_descriptor.adb");
+   for Main use ("tc_device_descriptor.adb",
+                 "tc_set_address.adb",
+                 "tc_set_early_address.adb",
+                 "tc_control_data_out.adb");
    for Object_Dir use "obj";
    for Exec_Dir use "bin";
    for Create_Missing_Dirs use "True";
