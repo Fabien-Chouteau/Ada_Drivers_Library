@@ -1,0 +1,60 @@
+name: Build all
+on: push
+jobs:
+
+  linux-build:
+    name: Build on Linux
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - uses: actions/setup-python@v1
+      with:
+        python-version: '2.x'
+    - uses: Fabien-Chouteau/setup-ada@dev
+      with:
+        distrib: community
+    - uses: Fabien-Chouteau/setup-ada@dev
+      with:
+        distrib: community
+        target: arm-elf
+    - uses: Fabien-Chouteau/setup-ada@dev
+      with:
+        distrib: community
+        target: riscv32-elf
+    - run: python $PWD/scripts/install_dependencies.py
+    - run: python $PWD/scripts/build_all_examples.py
+    - run: python $PWD/testsuite/run.py --coverage
+  
+  win-build:
+    name: Build on Windows
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v1
+    - uses: actions/setup-python@v1
+      with:
+        python-version: '2.x'
+    - uses: Fabien-Chouteau/setup-ada@dev
+      with:
+        distrib: community
+    - uses: Fabien-Chouteau/setup-ada@dev
+      with:
+        distrib: community
+        target: arm-elf
+    - run: python $PWD/scripts/install_dependencies.py
+    - run: python $PWD/scripts/build_all_examples.py
+    - run: python $PWD/testsuite/run.py
+
+  macos-build:
+    name: Build on macOS
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v1
+    - uses: actions/setup-python@v1
+      with:
+        python-version: '2.x'
+    - uses: Fabien-Chouteau/setup-ada@dev
+      with:
+        distrib: community
+        target: arm-elf
+    - run: python $PWD/scripts/install_dependencies.py
+    - run: python $PWD/scripts/build_all_examples.py
