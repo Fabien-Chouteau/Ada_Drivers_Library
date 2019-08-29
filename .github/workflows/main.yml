@@ -21,9 +21,9 @@ jobs:
       with:
         distrib: community
         target: riscv32-elf
-    - run: python $PWD/scripts/install_dependencies.py
-    - run: python $PWD/scripts/build_all_examples.py
-    - run: python $PWD/testsuite/run.py --coverage
+    - run: python scripts/install_dependencies.py
+    - run: python scripts/build_all_examples.py
+    - run: python testsuite/run.py --coverage
   
   win-build:
     name: Build on Windows
@@ -40,9 +40,9 @@ jobs:
       with:
         distrib: community
         target: arm-elf
-    - run: python $PWD/scripts/install_dependencies.py
-    - run: python $PWD/scripts/build_all_examples.py
-    - run: python $PWD/testsuite/run.py
+    - run: python scripts/install_dependencies.py
+    - run: python scripts/build_all_examples.py
+    - run: python testsuite/run.py
 
   macos-build:
     name: Build on macOS
@@ -56,5 +56,5 @@ jobs:
       with:
         distrib: community
         target: arm-elf
-    - run: python $PWD/scripts/install_dependencies.py
-    - run: python $PWD/scripts/build_all_examples.py
+    - run: python scripts/install_dependencies.py
+    - run: python scripts/build_all_examples.py
