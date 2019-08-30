@@ -52,7 +52,7 @@ def git_clone(repo_url, branch, dst, recursive=False):
     if branch:
         # Clone the repo
         returncode, stdout, stderr = run_program([
-            'git', '-C', dst, 'checkout', '-b', branch, "origin/" + branch])
+            'git', '-C', dst, 'checkout', '-B', branch, "origin/" + branch])
         print stdout
 
         if returncode:
