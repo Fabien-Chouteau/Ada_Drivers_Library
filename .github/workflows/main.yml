@@ -24,6 +24,9 @@ jobs:
     - run: python scripts/install_dependencies.py
     - run: python scripts/build_all_examples.py
     - run: python testsuite/run.py --coverage
+    - uses: codecov/codecov-action@v1.0.2
+      with:
+        token: ${{secrets.CODECOV_TOKEN}} #required
   
   win-build:
     name: Build on Windows
