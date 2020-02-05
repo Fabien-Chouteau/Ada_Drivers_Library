@@ -1,5 +1,7 @@
 name: Build all
-on: push
+on:
+  - push
+  - pull_request
 jobs:
 
   linux-build:
@@ -7,6 +9,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
+    - name: misspell
+      uses: reviewdog/action-misspell@v1
+      with:
+        github_token: ${{ secrets.github_token }}
+        locale: "US"
     - uses: actions/setup-python@v1
       with:
         python-version: '2.x'
