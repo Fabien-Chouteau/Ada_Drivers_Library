@@ -1,5 +1,6 @@
 name: Build all
-on: push
+on:
+  - pull_request
 jobs:
 
   linux-build:
@@ -7,17 +8,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
+    - name: misspell
+      uses: reviewdog/action-misspell@v1
+      with:
+        github_token: ${{ secrets.REVIEWDOG_TOKEN }}
+        locale: "US"
+        reporter: github-pr-review
     - uses: actions/setup-python@v1
       with:
         python-version: '2.x'
-    - uses: Fabien-Chouteau/setup-ada@dev
+    - uses: ada-actions/toolchain@dev
       with:
         distrib: community
-    - uses: Fabien-Chouteau/setup-ada@dev
+    - uses: ada-actions/toolchain@dev
       with:
         distrib: community
         target: arm-elf
-    - uses: Fabien-Chouteau/setup-ada@dev
+    - uses: ada-actions/toolchain@dev
       with:
         distrib: community
         target: riscv32-elf
@@ -36,10 +43,10 @@ jobs:
     - uses: actions/setup-python@v1
       with:
         python-version: '2.x'
-    - uses: Fabien-Chouteau/setup-ada@dev
+    - uses: ada-actions/toolchain@dev
       with:
         distrib: community
-    - uses: Fabien-Chouteau/setup-ada@dev
+    - uses: ada-actions/toolchain@dev
       with:
         distrib: community
         target: arm-elf
@@ -55,7 +62,7 @@ jobs:
     - uses: actions/setup-python@v1
       with:
         python-version: '2.x'
-    - uses: Fabien-Chouteau/setup-ada@dev
+    - uses: ada-actions/toolchain@dev
       with:
         distrib: community
         target: arm-elf
