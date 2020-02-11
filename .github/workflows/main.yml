@@ -11,7 +11,7 @@ jobs:
     - name: misspell
       uses: reviewdog/action-misspell@v1
       with:
-        github_token: ${{ secrets.github_token }}
+        github_token: ${{ secrets.REVIEWDOG_TOKEN }}
         locale: "US"
         reporter: github-pr-review
     - uses: actions/setup-python@v1
@@ -62,7 +62,7 @@ jobs:
     - uses: actions/setup-python@v1
       with:
         python-version: '2.x'
-    - uses: Fada-actions/toolchain@dev
+    - uses: ada-actions/toolchain@dev
       with:
         distrib: community
         target: arm-elf
