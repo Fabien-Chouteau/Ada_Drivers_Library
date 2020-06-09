@@ -1,4 +1,4 @@
-#! /usr/bin/env python2
+#! /usr/bin/env python3
 
 import argparse
 import os
@@ -11,20 +11,10 @@ ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
 
 def run_program(*argv):
-    print "$ %s" % " ".join(argv)
+    print("$ %s" % " ".join(argv))
     p = subprocess.Popen(argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     stdout, stderr = p.communicate()
-
-    try:
-        stdout = stdout.decode('ascii')
-    except UnicodeError:
-        return 'stdout is not ASCII'
-
-    try:
-        stderr = stderr.decode('ascii')
-    except UnicodeError:
-        return 'stderr is not ASCII'
 
     return (p.returncode, stdout, stderr)
 
@@ -35,19 +25,19 @@ def gprbuild(project_file, debug=False):
     extra_args += ["-XADL_BUILD=" + ("Debug" if debug else "Production")]
     extra_args += ["-XADL_BUILD_CHECKS=Enabled"]
 
-    print "Building '%s'" % project_file
+    print("Building '%s'" % project_file)
 
     # Build the project
     returncode, stdout, stderr = run_program(
         'gprbuild', '-j0', '-p', '-q', '-s', '-P', project_file, *extra_args
     )
 
-    print stdout
+    print(stdout)
 
     if returncode:
-        print 'Build error (gprbuild returned {}):\n{}'.format(
+        print('Build error (gprbuild returned {}):\n{}'.format(
             returncode, stderr
-        )
+        ))
 
     # Clean to avoid error in the next build with a different run-time or
     # compile switches.
@@ -86,6 +76,10 @@ projects = [
             "/examples/STM32F4_DISCO/filesystem/filesystem.gpr",
             "/examples/STM32F4_DISCO/blinky_f4disco.gpr",
             "/examples/STM32F4_DISCO/serial_ports_f4disco.gpr",
+
+            # Feather STM32F405
+            "/examples/feather_stm32f405/blinky/blinky.gpr",
+            "/examples/feather_stm32f405/charlie_wing/charlie_wing.gpr",
 
             # STM32F469 Discovery
             "/boards/stm32f469_discovery/stm32f469_discovery_full.gpr",
@@ -134,6 +128,12 @@ projects = [
             "/examples/MicroBit/neopixel/neopixel.gpr",
             "/examples/MicroBit/follower/follower.gpr",
             "/examples/MicroBit/accelerometer/accelerometer.gpr",
+
+            # NRF52_SDK
+            "/boards/NRF52_DK/nrf52_dk_zfp.gpr",
+            "/examples/NRF52_DK/buttons/buttons.gpr",
+            "/examples/NRF52_DK/BLE_beacon/BLE_beacon.gpr",
+            "/examples/NRF52_DK/digital_out/digital_out.gpr",
 
             # STM32 driver examples
             STM_DRIVERS + "/demo_adc_dma/demo_adc_dma.gpr",
@@ -185,7 +185,7 @@ def main(args):
     # Check if we can actually detect a build failure
     ret = gprbuild("This_Project_Doesnt_Exist", debug=False)
     if not ret:
-        print "Build failure is not detected"
+        print("Build failure is not detected")
         sys.exit(1)
 
     ret = 0

@@ -1,6 +1,6 @@
 ------------------------------------------------------------------------------
 --                                                                          --
---                    Copyright (C) 2017, AdaCore                           --
+--                 Copyright (C) 2017, 2020, AdaCore                        --
 --                                                                          --
 --  Redistribution and use in source and binary forms, with or without      --
 --  modification, are permitted provided that the following conditions are  --
@@ -34,6 +34,7 @@
 ------------------------------------------------------------------------------
 
 with HAL.I2C;
+with HAL.Time;
 
 package VL53L0X is
 
@@ -45,7 +46,8 @@ package VL53L0X is
      with Size => 32;
 
    type VL53L0X_Ranging_Sensor
-     (Port  : not null HAL.I2C.Any_I2C_Port) is limited private;
+     (Port   : not null HAL.I2C.Any_I2C_Port;
+      Timing : not null HAL.Time.Any_Delays) is limited private;
 
    type VL53L0X_GPIO_Functionality is
      (No_Interrupt,
@@ -53,6 +55,9 @@ package VL53L0X is
       Level_High,
       Out_Of_Window,
       New_Sample_Ready);
+
+   function Get_GPIO_Functionality (This : VL53L0X_Ranging_Sensor)
+                                   return VL53L0X_GPIO_Functionality;
 
    type VL53L0X_Interrupt_Polarity is
      (Polarity_Low,
@@ -62,6 +67,8 @@ package VL53L0X is
      (This : in out VL53L0X_Ranging_Sensor);
 
    function Read_Id (This : VL53L0X_Ranging_Sensor) return HAL.UInt16;
+
+   function Read_Revision (This : VL53L0X_Ranging_Sensor) return HAL.UInt8;
 
    procedure Set_Device_Address
      (This   : in out VL53L0X_Ranging_Sensor;
@@ -75,34 +82,48 @@ package VL53L0X is
    procedure Static_Init
      (This          : in out VL53L0X_Ranging_Sensor;
       GPIO_Function : VL53L0X_GPIO_Functionality;
-      Status        : out Boolean);
+      Status        : out Boolean)
+   with Post => (if Status then Get_GPIO_Functionality (This) = GPIO_Function);
 
    procedure Perform_Ref_Calibration
      (This   : in out VL53L0X_Ranging_Sensor;
-      Status : out Boolean);
+      Status : out Boolean)
+   with Pre => Get_GPIO_Functionality (This) = New_Sample_Ready;
+
+   procedure Start_Continuous
+     (This      :     VL53L0X.VL53L0X_Ranging_Sensor;
+      Period_Ms :     HAL.UInt32;
+      Status    : out Boolean)
+   with Pre => Get_GPIO_Functionality (This) = New_Sample_Ready;
+   --  Start cyclic reads.
+   --  If Period_Ms is 0, run as fast as possible.
 
    procedure Start_Range_Single_Millimeters
      (This   : VL53L0X_Ranging_Sensor;
-      Status : out Boolean);
+      Status : out Boolean)
+   with Pre => Get_GPIO_Functionality (This) = New_Sample_Ready;
    --  Start a read operation on sensor
 
    function Range_Value_Available
-     (This : VL53L0X_Ranging_Sensor) return Boolean;
+     (This : VL53L0X_Ranging_Sensor) return Boolean
+   with Pre => Get_GPIO_Functionality (This) = New_Sample_Ready;
    --  Returns True when a new value is available
 
    function Read_Range_Millimeters
      (This : VL53L0X_Ranging_Sensor) return HAL.UInt16
-     with Pre => Range_Value_Available (This);
+   with Pre => Range_Value_Available (This);
    --  Read the available ranging value
 
    function Read_Range_Single_Millimeters
-     (This : VL53L0X_Ranging_Sensor) return HAL.UInt16;
+     (This : VL53L0X_Ranging_Sensor) return HAL.UInt16
+   with Pre => Get_GPIO_Functionality (This) = New_Sample_Ready;
 
    procedure Set_GPIO_Config
      (This          : in out VL53L0X_Ranging_Sensor;
       Functionality : VL53L0X_GPIO_Functionality;
       Polarity      : VL53L0X_Interrupt_Polarity;
-      Status        : out Boolean);
+      Status        : out Boolean)
+   with Post => (if Status then Get_GPIO_Functionality (This) = Functionality);
 
    procedure Clear_Interrupt_Mask
      (This : VL53L0X_Ranging_Sensor);
@@ -125,13 +146,15 @@ package VL53L0X is
    procedure Set_VCSEL_Pulse_Period_Pre_Range
      (This   : VL53L0X_Ranging_Sensor;
       Period : HAL.UInt8;
-      Status : out Boolean);
+      Status : out Boolean)
+   with Pre => Get_GPIO_Functionality (This) = New_Sample_Ready;
    --  Default period: 14 PCLKs
 
    procedure Set_VCSEL_Pulse_Period_Final_Range
      (This   : VL53L0X_Ranging_Sensor;
       Period : HAL.UInt8;
-      Status : out Boolean);
+      Status : out Boolean)
+   with Pre => Get_GPIO_Functionality (This) = New_Sample_Ready;
    --  Default period: 10 PCLKs
 
 private
@@ -280,7 +303,8 @@ private
       Part_UID_Lower                    : HAL.UInt32;
    end record;
 
-   type VL53L0X_Ranging_Sensor (Port : not null HAL.I2C.Any_I2C_Port)
+   type VL53L0X_Ranging_Sensor (Port   : not null HAL.I2C.Any_I2C_Port;
+                                Timing : not null HAL.Time.Any_Delays)
    is limited record
       --  Default address: can be changed by software
       I2C_Address            : HAL.I2C.I2C_Address := 16#52#;
@@ -373,6 +397,7 @@ private
      (This     : VL53L0X_Ranging_Sensor;
       Period   : HAL.UInt8;
       Sequence : VL53L0x_Sequence_Step;
-      Status   : out Boolean);
+      Status   : out Boolean)
+   with Pre => Get_GPIO_Functionality (This) = New_Sample_Ready;
 
 end VL53L0X;

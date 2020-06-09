@@ -1,6 +1,6 @@
 ------------------------------------------------------------------------------
 --                                                                          --
---                    Copyright (C) 2016-2017, AdaCore                      --
+--                    Copyright (C) 2016-2020, AdaCore                      --
 --                                                                          --
 --  Redistribution and use in source and binary forms, with or without      --
 --  modification, are permitted provided that the following conditions are  --
@@ -30,8 +30,8 @@
 ------------------------------------------------------------------------------
 
 with HAL;                  use HAL;
-with nRF51.GPIO;           use nRF51.GPIO;
-with nRF51.Device;         use nRF51.Device;
+with nRF.GPIO;           use nRF.GPIO;
+with nRF.Device;         use nRF.Device;
 with MicroBit.Time;        use MicroBit.Time;
 with System.Machine_Code;  use System.Machine_Code;
 

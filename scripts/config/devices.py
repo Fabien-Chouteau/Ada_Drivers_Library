@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 
 import sys
-from peripherals import *
+from config.peripherals import *
 
 
 class U540(SOC):
@@ -33,12 +33,14 @@ def list_of_devices(config):
                 'STM32F769NIHx']
     elif family == "nRF51":
         return ['nRF51822xxAA']
+    elif family == "nRF52":
+        return ['nRF52832xxAA']
     elif family == "FE3":
         return ['FE310']
     elif family == "U5":
         return ['U540']
     else:
-        print "fatal error, unknown family '%s'" % family
+        print("fatal error, unknown family '%s'" % family)
         sys.exit(1)
 
 
@@ -51,7 +53,7 @@ def list_of_vendors(config):
     elif arch == "Native":
         return []
     else:
-        print "fatal error, unknown architecture '%s'" % arch
+        print("fatal error, unknown architecture '%s'" % arch)
         sys.exit(1)
 
 
@@ -60,11 +62,11 @@ def list_of_families(config):
     if vendor == "STMicro":
         return ["STM32F4", "STM32F7"]
     elif vendor == "Nordic":
-        return ["nRF51"]
+        return ["nRF51", "nRF52"]
     elif vendor == "SiFive":
         return ['FE3', 'U5']
     else:
-        print "fatal error, unknown vendor '%s'" % vendor
+        print("fatal error, unknown vendor '%s'" % vendor)
         sys.exit(1)
 
 
@@ -168,8 +170,9 @@ def load_device_config(config, source_dir):
                 'arch/ARM/STM32/drivers/sd/sdmmc/']
 
     elif mcu.startswith('nRF51'):
-        src += ['arch/ARM/Nordic/devices/',
-                'arch/ARM/Nordic/drivers/',
+        src += ['arch/ARM/Nordic/devices/nrf51',
+                'arch/ARM/Nordic/drivers/nrf_common',
+                'arch/ARM/Nordic/drivers/nrf51',
                 'arch/ARM/Nordic/svd/nrf51/']
 
         config.pre_define('Number_Of_Interrupts', 32, origin)
@@ -185,6 +188,17 @@ def load_device_config(config, source_dir):
         else:
             config.add_memory('ram', 'ram', '0x20000000', '16K')
 
+    elif mcu.startswith('nRF52'):
+        src += ['arch/ARM/Nordic/devices/nrf52',
+                'arch/ARM/Nordic/drivers/nrf_common',
+                'arch/ARM/Nordic/drivers/nrf52',
+                'arch/ARM/Nordic/svd/nrf52/']
+
+        config.pre_define('Number_Of_Interrupts', 128, origin)
+
+        config.add_memory('rom', 'flash', '0x00000000', '512K')
+        config.add_memory('ram', 'ram', '0x20000000', '64K')
+
     elif mcu == 'FE310':
         src += ['arch/RISC-V/SiFive/svd/FE310/',
                 'arch/RISC-V/SiFive/devices/FE310/',
@@ -195,7 +209,7 @@ def load_device_config(config, source_dir):
         dev = U540()
 
     else:
-        print "Unknown MCU device %s." % mcu
+        print("Unknown MCU device %s." % mcu)
 
     if dev:
         dev.write_device_spec(source_dir)

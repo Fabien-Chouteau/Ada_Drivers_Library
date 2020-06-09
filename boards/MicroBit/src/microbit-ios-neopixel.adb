@@ -1,6 +1,6 @@
 ------------------------------------------------------------------------------
 --                                                                          --
---                       Copyright (C) 2019, AdaCore                        --
+--                    Copyright (C) 2019-2020, AdaCore                      --
 --                                                                          --
 --  Redistribution and use in source and binary forms, with or without      --
 --  modification, are permitted provided that the following conditions are  --
@@ -34,7 +34,7 @@
 
 with System.Machine_Code; use System, System.Machine_Code;
 
-with NRF51_SVD.GPIO; use NRF51_SVD.GPIO;
+with NRF_SVD.GPIO; use NRF_SVD.GPIO;
 with MicroBit.Time;
 
 package body MicroBit.IOs.NeoPixel is

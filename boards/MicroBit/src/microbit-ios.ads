@@ -1,6 +1,6 @@
 ------------------------------------------------------------------------------
 --                                                                          --
---                       Copyright (C) 2017, AdaCore                        --
+--                    Copyright (C) 2017-2020, AdaCore                      --
 --                                                                          --
 --  Redistribution and use in source and binary forms, with or without      --
 --  modification, are permitted provided that the following conditions are  --
@@ -29,7 +29,7 @@
 --                                                                          --
 ------------------------------------------------------------------------------
 
-with nRF51.GPIO; use nRF51.GPIO;
+with nRF.GPIO; use nRF.GPIO;
 
 package MicroBit.IOs is
 
